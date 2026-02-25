@@ -13,6 +13,7 @@ use Snowberry\WpMvc\Infrastructure\WordPress\WordPressServiceProvider;
 use Snowberry\WpMvc\Infrastructure\WordPress\DiscoveryServiceProvider;
 use Snowberry\WpMvc\Infrastructure\WordPress\ControllerServiceProvider;
 use Snowberry\WpMvc\Infrastructure\WordPress\CliServiceProvider;
+use Snowberry\WpMvc\Infrastructure\WordPress\BlockServiceProvider;
 
 final class Kernel
 {
@@ -40,6 +41,10 @@ final class Kernel
 
 		$this->container->addProvider(
 			new ControllerServiceProvider()
+		);
+
+		$this->container->addProvider(
+			new BlockServiceProvider()
 		);
 
 		$this->container->addProvider(
