@@ -9,6 +9,7 @@ use Snowberry\WpMvc\Core\ServiceProvider;
 use Snowberry\WpMvc\Core\RegistrationRegistry;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
 use Snowberry\WpMvc\Contracts\MetaRepositoryInterface;
+use Snowberry\WpMvc\Contracts\AcfFieldServiceInterface;
 use Snowberry\WpMvc\Contracts\HttpClientInterface;
 use Snowberry\WpMvc\Contracts\CacheInterface;
 use Snowberry\WpMvc\Contracts\PostTypeRegistrarInterface;
@@ -35,6 +36,11 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			MetaRepositoryInterface::class,
 			fn() => new MetaRepository()
+		);
+
+		$container->singleton(
+			AcfFieldServiceInterface::class,
+			fn() => new AcfFieldService()
 		);
 
 		$container->singleton(
