@@ -4,31 +4,63 @@ declare(strict_types=1);
 
 namespace {{app_namespace}}\Domain\PostTypes\{{post_type.class}};
 
-use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
+use Snowberry\WpMvc\Contracts\EntityValidatorInterface;
 use Snowberry\WpMvc\Contracts\MetaRepositoryInterface;
+use Snowberry\WpMvc\Contracts\PostDTO;
+use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
+use Snowberry\WpMvc\Domain\Persistence\AbstractPostTypeRepository;
 {{post_type.relationship_repo_uses}}
 
-final class {{post_type.class}}Repository
+/**
+ * @extends AbstractPostTypeRepository<{{post_type.class}}>
+ */
+final class {{post_type.class}}Repository extends AbstractPostTypeRepository
 {
+{{post_type.relationship_repository_properties}}
+
     public function __construct(
-        private PostRepositoryInterface $posts,
-        private MetaRepositoryInterface $meta,
+        PostRepositoryInterface $postRepository,
+        MetaRepositoryInterface $metaRepository,
+        ?EntityValidatorInterface $validator = null,
 {{post_type.relationship_repository_constructor_params}}
-    ) {}
+    ) {
+{{post_type.relationship_repository_constructor_assignments}}
+        parent::__construct($postRepository, $metaRepository, $validator);
+    }
 
-    public function find(int $id): ?{{post_type.class}}
+    protected function postType(): string
     {
-        $post = $this->posts->find($id);
+        return '{{post_type.slug}}';
+    }
 
-        if (!$post || $post->post_type !== '{{post_type.slug}}') {
-            return null;
-        }
-
+    protected function map(PostDTO $post): {{post_type.class}}
+    {
         return new {{post_type.class}}(
             id: $post->ID,
             title: $post->post_title,
             content: $post->post_content,
-			{{post_type.field_hydration}}
+            {{post_type.field_hydration}}
         );
+    }
+
+    protected function extractPostId(object $entity): ?int
+    {
+        /** @var {{post_type.class}} $entity */
+        return $entity->id;
+    }
+
+    protected function extractPostData(object $entity): array
+    {
+        /** @var {{post_type.class}} $entity */
+        return [
+            'post_title' => $entity->title,
+            'post_content' => $entity->content,
+        ];
+    }
+
+    protected function saveMeta(int $postId, object $entity): void
+    {
+        /** @var {{post_type.class}} $entity */
+{{post_type.field_meta_persistence}}
     }
 }
