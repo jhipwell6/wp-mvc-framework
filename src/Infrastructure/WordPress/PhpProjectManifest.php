@@ -66,4 +66,28 @@ final class PhpProjectManifest implements ProjectManifestInterface
 
 		return $providers;
 	}
+
+	/**
+	 * @return string[]
+	 */
+	public function blocks(): array
+	{
+		if ( ! array_key_exists( 'blocks', $this->config ) ) {
+			return [];
+		}
+
+		$blocks = $this->config['blocks'];
+
+		if ( ! is_array( $blocks ) ) {
+			throw new RuntimeException( 'Manifest blocks must be an array of class names.' );
+		}
+
+		foreach ( $blocks as $block ) {
+			if ( ! is_string( $block ) ) {
+				throw new RuntimeException( 'Manifest blocks must be an array of class names.' );
+			}
+		}
+
+		return $blocks;
+	}
 }

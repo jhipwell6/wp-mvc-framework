@@ -15,4 +15,9 @@ interface ProjectManifestInterface
 	 * @return string[]
 	 */
 	public function providers(): array;
+
+	/**
+	 * @return string[]
+	 */
+	public function blocks(): array;
 }
