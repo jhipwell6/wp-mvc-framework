@@ -1,0 +1,18 @@
+{
+	"name": "snowberry/wp-mvc-framework",
+	"description": "Reusable WordPress MVC kernel and infrastructure adapters",
+	"type": "library",
+	"license": "proprietary",
+	"require": {
+		"php": ">=8.1"
+	},
+	"autoload": {
+		"psr-4": {
+			"Snowberry\\WpMvc\\": "src/"
+		}
+	},
+	"config": {
+		"sort-packages": true,
+		"optimize-autoloader": true
+	}
+}
