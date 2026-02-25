@@ -42,4 +42,28 @@ final class PhpProjectManifest implements ProjectManifestInterface
 
 		return $this->config['paths'][$key];
 	}
+
+	/**
+	 * @return string[]
+	 */
+	public function providers(): array
+	{
+		if ( ! array_key_exists( 'providers', $this->config ) ) {
+			return [];
+		}
+
+		$providers = $this->config['providers'];
+
+		if ( ! is_array( $providers ) ) {
+			throw new RuntimeException( 'Manifest providers must be an array of class names.' );
+		}
+
+		foreach ( $providers as $provider ) {
+			if ( ! is_string( $provider ) ) {
+				throw new RuntimeException( 'Manifest providers must be an array of class names.' );
+			}
+		}
+
+		return $providers;
+	}
 }
