@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace {{app_namespace}}\Domain\PostTypes\{{post_type.class}};
+namespace {{app_namespace}}\Domain\PostTypes\{{post_type.class}}\Generated;
 
+use {{app_namespace}}\Domain\PostTypes\{{post_type.class}}\{{post_type.class}};
 use Snowberry\WpMvc\Contracts\EntityValidatorInterface;
 use Snowberry\WpMvc\Contracts\MetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\PostDTO;
@@ -14,7 +15,7 @@ use Snowberry\WpMvc\Domain\Persistence\AbstractPostTypeRepository;
 /**
  * @extends AbstractPostTypeRepository<{{post_type.class}}>
  */
-final class {{post_type.class}}Repository extends AbstractPostTypeRepository
+class {{post_type.class}}RepositoryBase extends AbstractPostTypeRepository
 {
 {{post_type.relationship_repository_properties}}
 

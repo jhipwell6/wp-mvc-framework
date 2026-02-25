@@ -31,6 +31,8 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 
 	public function generate( string $name, array $options = [] ): ScaffoldResult
 	{
+		$force = (bool) ( $options['force'] ?? false );
+
 		$slug = strtolower( $name );
 		$class = Naming::studly( $slug );
 
@@ -120,25 +122,41 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 		$this->writer->writeTemplate(
 			$result,
 			"{$contentRoot}/PostTypes/{$slug}.php",
-			$this->stubs->get( 'post-type/definition.php' ),
+			$this->stubs->get( 'post-type/definition.stub.php' ),
 			$context,
-			(bool) ($options['force'] ?? false)
+			$force
+		);
+
+		$this->writer->writeTemplate(
+			$result,
+			"{$domainRoot}/PostTypes/{$class}/Generated/{$class}Base.php",
+			$this->stubs->get( 'post-type/entity.stub.php' ),
+			$context,
+			$force
+		);
+
+		$this->writer->writeTemplate(
+			$result,
+			"{$domainRoot}/PostTypes/{$class}/Generated/{$class}RepositoryBase.php",
+			$this->stubs->get( 'post-type/repository.stub.php' ),
+			$context,
+			$force
 		);
 
 		$this->writer->writeTemplate(
 			$result,
 			"{$domainRoot}/PostTypes/{$class}/{$class}.php",
-			$this->stubs->get( 'post-type/entity.php' ),
+			$this->stubs->get( 'post-type/entity.concrete.stub.php' ),
 			$context,
-			(bool) ($options['force'] ?? false)
+			false
 		);
 
 		$this->writer->writeTemplate(
 			$result,
 			"{$domainRoot}/PostTypes/{$class}/{$class}Repository.php",
-			$this->stubs->get( 'post-type/repository.php' ),
+			$this->stubs->get( 'post-type/repository.concrete.stub.php' ),
 			$context,
-			(bool) ($options['force'] ?? false)
+			false
 		);
 
 		$result->notes[] = "Next: load src/Content/PostTypes/{$slug}.php into the registration registry (client provider later).";

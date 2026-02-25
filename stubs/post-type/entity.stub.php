@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace {{app_namespace}}\Domain\PostTypes\{{post_type.class}};
+namespace {{app_namespace}}\Domain\PostTypes\{{post_type.class}}\Generated;
 
 {{post_type.relationship_entity_uses}}
 
-final class {{post_type.class}}
+class {{post_type.class}}Base
 {
     {{post_type.relationship_state_properties}}
 
