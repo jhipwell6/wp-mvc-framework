@@ -56,6 +56,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 				'archive_php' => $archive === true ? 'true' : ($archive === false ? 'false' : var_export( $archive, true )),
 				'fields' => '',
 				'field_hydration' => '',
+				'field_meta_persistence' => '',
 			],
 		];
 
@@ -67,6 +68,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 			if ( ! empty( $fields ) ) {
 				$propertyLines = [];
 				$hydrationLines = [];
+				$metaPersistenceLines = [];
 
 				foreach ( $fields as $field ) {
 					$type = $this->typeMapper->phpType( $field );
@@ -75,12 +77,14 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 					if ( $field->type === 'relationship' ) {
 						$relationshipFields[] = $field;
 						$hydrationLines[] = $this->generateRelationshipHydration( $field );
+						$metaPersistenceLines[] = $this->generateRelationshipMetaPersistence( $field );
 						continue;
 					}
 
 					if ( $field->type === 'repeater' ) {
 						$propertyLines[] = "public array \${$field->name} = [],";
 						$hydrationLines[] = $this->generateRepeaterHydration( $field );
+						$metaPersistenceLines[] = "        \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});";
 						continue;
 					}
 
@@ -89,15 +93,22 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 					$propertyLines[] = "public {$nullable}{$type} \${$field->name}{$default},";
 
 					if ( $type === '\\DateTimeImmutable' ) {
-						$hydrationLines[] = "{$metaKey}: (\$value = \$this->meta->get(\$post->ID, '{$metaKey}')) ? new \\DateTimeImmutable(\$value) : null,";
+						$hydrationLines[] = "{$metaKey}: (\$value = \$this->metaRepository->get(\$post->ID, '{$metaKey}')) ? new \\DateTimeImmutable(\$value) : null,";
+						$metaPersistenceLines[] = "        if (\$entity->{$metaKey} === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey}->format(DATE_ATOM));\n        }";
 						continue;
 					}
 
-					$hydrationLines[] = "{$metaKey}: \$this->meta->get(\$post->ID, '{$metaKey}'),";
+					$hydrationLines[] = "{$metaKey}: \$this->metaRepository->get(\$post->ID, '{$metaKey}'),";
+					if ( $field->required ) {
+						$metaPersistenceLines[] = "        \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});";
+					} else {
+						$metaPersistenceLines[] = "        if (\$entity->{$metaKey} === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});\n        }";
+					}
 				}
 
 				$context['post_type']['fields'] = implode( "\n", $propertyLines );
 				$context['post_type']['field_hydration'] = implode( "\n", $hydrationLines );
+				$context['post_type']['field_meta_persistence'] = implode( "\n", $metaPersistenceLines );
 			}
 		}
 
@@ -152,7 +163,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 "
 			. "                    fn(\$row): array => " . $this->generateRepeaterConstructorArgs( $field ) . ",
 "
-			. "                    is_array(\$rows = \$this->meta->get(\$post->ID, '{$field->name}')) ? \$rows : []
+			. "                    is_array(\$rows = \$this->metaRepository->get(\$post->ID, '{$field->name}')) ? \$rows : []
 "
 			. "                )
 "
@@ -180,22 +191,33 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 
 		if ( ! is_string( $field->relatedPostType ) || $field->relatedPostType === '' ) {
 			if ( $field->multiple ) {
-				return "{$metaKey}Ids: array_map(fn(\$id) => (int) \$id, \$this->meta->get(\$post->ID, '{$metaKey}') ?: []),";
+				return "{$metaKey}Ids: array_map(fn(\$id) => (int) \$id, \$this->metaRepository->get(\$post->ID, '{$metaKey}') ?: []),";
 			}
 
-			return "{$metaKey}Id: (\$value = \$this->meta->get(\$post->ID, '{$metaKey}')) ? (int) \$value : null,";
+			return "{$metaKey}Id: (\$value = \$this->metaRepository->get(\$post->ID, '{$metaKey}')) ? (int) \$value : null,";
 		}
 
 		$relationshipMethod = Naming::camel( $field->relatedPostType ) . 'Repository';
 		$relationshipEntity = Naming::studly( $field->relatedPostType );
 
 		if ( $field->multiple ) {
-			return "{$metaKey}Ids: array_map(fn(\$id) => (int) \$id, \$this->meta->get(\$post->ID, '{$metaKey}') ?: []),\n"
+			return "{$metaKey}Ids: array_map(fn(\$id) => (int) \$id, \$this->metaRepository->get(\$post->ID, '{$metaKey}') ?: []),\n"
 				. "            {$metaKey}Resolver: fn(array \$ids): array => array_values(array_filter(array_map(fn(int \$id): ?{$relationshipEntity} => \$this->{$relationshipMethod}->find(\$id), \$ids))),";
 		}
 
-		return "{$metaKey}Id: (\$value = \$this->meta->get(\$post->ID, '{$metaKey}')) ? (int) \$value : null,\n"
+		return "{$metaKey}Id: (\$value = \$this->metaRepository->get(\$post->ID, '{$metaKey}')) ? (int) \$value : null,\n"
 			. "            {$metaKey}Resolver: fn(int \$id): ?{$relationshipEntity} => \$this->{$relationshipMethod}->find(\$id),";
+	}
+
+	private function generateRelationshipMetaPersistence( FieldDefinition $field ): string
+	{
+		$metaKey = $field->name;
+
+		if ( $field->multiple ) {
+			return "        \$this->metaRepository->update(\$postId, '{$metaKey}', array_map(fn(int \$id): int => \$id, \$entity->{$metaKey}Ids));";
+		}
+
+		return "        if (\$entity->{$metaKey}Id === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey}Id);\n        }";
 	}
 
 	/**
@@ -211,6 +233,8 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 			'relationship_constructor_params' => '',
 			'relationship_constructor_assignments' => '',
 			'relationship_repository_constructor_params' => '',
+			'relationship_repository_properties' => '',
+			'relationship_repository_constructor_assignments' => '',
 			'relationship_methods' => '',
 		];
 
@@ -225,6 +249,8 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 		$constructorAssignments = [];
 		$repositoryConstructor = [];
 		$relationshipMethods = [];
+		$repositoryProperties = [];
+		$repositoryAssignments = [];
 		$addedRepositories = [];
 
 		foreach ( $relationshipFields as $field ) {
@@ -240,7 +266,9 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 			$repoUses[] = "use {$appNamespace}\\Domain\\PostTypes\\{$relatedClass}\\{$relatedRepo};";
 
 			if ( ! isset( $addedRepositories[ $relatedRepoVariable ] ) ) {
-				$repositoryConstructor[] = "        private {$relatedRepo} \${$relatedRepoVariable},";
+				$repositoryProperties[] = "    private {$relatedRepo} \${$relatedRepoVariable};";
+				$repositoryConstructor[] = "        {$relatedRepo} \${$relatedRepoVariable},";
+				$repositoryAssignments[] = "        \$this->{$relatedRepoVariable} = \${$relatedRepoVariable};";
 				$addedRepositories[ $relatedRepoVariable ] = true;
 			}
 
@@ -269,6 +297,8 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 			'relationship_constructor_params' => implode( "\n", $constructorParams ),
 			'relationship_constructor_assignments' => implode( "\n", $constructorAssignments ),
 			'relationship_repository_constructor_params' => implode( "\n", $repositoryConstructor ),
+			'relationship_repository_properties' => implode( "\n", $repositoryProperties ),
+			'relationship_repository_constructor_assignments' => implode( "\n", $repositoryAssignments ),
 			'relationship_methods' => implode( "\n\n", $relationshipMethods ),
 		];
 	}
