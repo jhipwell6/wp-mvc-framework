@@ -15,6 +15,9 @@ use Snowberry\WpMvc\Contracts\CacheInterface;
 use Snowberry\WpMvc\Contracts\PostTypeRegistrarInterface;
 use Snowberry\WpMvc\Contracts\TaxonomyRegistrarInterface;
 use Snowberry\WpMvc\Contracts\FieldGroupRegistrarInterface;
+use Snowberry\WpMvc\Contracts\ViewRendererInterface;
+use Snowberry\WpMvc\Contracts\ProjectLocatorInterface;
+use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
 
 final class WordPressServiceProvider extends ServiceProvider
@@ -51,6 +54,14 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			CacheInterface::class,
 			fn() => new TransientCache()
+		);
+
+		$container->singleton(
+			ViewRendererInterface::class,
+			fn( Container $c ) => new PhpViewRenderer(
+				$c->get( ProjectLocatorInterface::class ),
+				$c->get( ProjectManifestInterface::class ),
+			)
 		);
 
 		/*

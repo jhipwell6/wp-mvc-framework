@@ -6,15 +6,22 @@ namespace Snowberry\WpMvc\Controller;
 
 use Snowberry\WpMvc\Contracts\AcfFieldServiceInterface;
 use Snowberry\WpMvc\Contracts\BlockDefinitionInterface;
+use Snowberry\WpMvc\Contracts\ViewRendererInterface;
 use Snowberry\WpMvc\Core\Container;
 
 abstract class AbstractBlockController implements BlockDefinitionInterface
 {
 
 	public function __construct(
-		protected Container $container
+		protected Container $container,
+		protected ViewRendererInterface $viewRenderer
 	)
 	{
+	}
+
+	protected function view( string $view, array $data = [] ): void
+	{
+		echo $this->viewRenderer->render( $view, $data );
 	}
 
 	protected function field( string $key, int|string|null $context = null ): mixed
