@@ -32,6 +32,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 	public function generate( string $name, array $options = [] ): ScaffoldResult
 	{
 		$force = (bool) ( $options['force'] ?? false );
+		$withController = (bool) ( $options['with-controller'] ?? false );
 
 		$slug = strtolower( $name );
 		$class = Naming::studly( $slug );
@@ -158,6 +159,16 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 			$context,
 			false
 		);
+
+		if ( $withController ) {
+			$this->writer->writeTemplate(
+				$result,
+				"{$pluginRoot}/src/Controllers/{$class}Controller.php",
+				$this->stubs->get( 'post-type/controller.stub.php' ),
+				$context,
+				false
+			);
+		}
 
 		$result->notes[] = "Next: load src/Content/PostTypes/{$slug}.php into the registration registry (client provider later).";
 
