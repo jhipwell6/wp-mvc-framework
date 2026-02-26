@@ -7,6 +7,7 @@ namespace Snowberry\WpMvc\Domain\Persistence;
 use RuntimeException;
 use Snowberry\WpMvc\Contracts\EntityValidatorInterface;
 use Snowberry\WpMvc\Contracts\TermDTO;
+use Snowberry\WpMvc\Contracts\TermMetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
 
 /**
@@ -16,6 +17,7 @@ abstract class AbstractTaxonomyRepository
 {
 	public function __construct(
 		protected TermRepositoryInterface $termRepository,
+		protected TermMetaRepositoryInterface $termMetaRepository,
 		protected ?EntityValidatorInterface $validator = null
 	)
 	{
@@ -38,6 +40,11 @@ abstract class AbstractTaxonomyRepository
 	 * @return array<string, mixed>
 	 */
 	abstract protected function extractTermData(object $entity): array;
+
+	protected function acfContext(int $termId): string
+	{
+		return "term_{$termId}";
+	}
 
 	/**
 	 * @return T|null

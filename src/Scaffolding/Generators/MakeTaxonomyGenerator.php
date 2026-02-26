@@ -62,6 +62,12 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
         $this->writer->writeTemplate(
             $result,
             "{$domainRoot}/Taxonomies/{$class}/Generated/{$class}Base.php",
+            ],
+        ];
+
+        $this->writer->writeTemplate(
+            $result,
+            "{$domainRoot}/PostTypes/{$class}/Generated/{$class}Base.php",
             $this->stubs->get('taxonomy/entity.stub.php'),
             $context,
             $force
@@ -70,6 +76,7 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
         $this->writer->writeTemplate(
             $result,
             "{$domainRoot}/Taxonomies/{$class}/Generated/{$class}RepositoryBase.php",
+            "{$domainRoot}/PostTypes/{$class}/Generated/{$class}RepositoryBase.php",
             $this->stubs->get('taxonomy/repository.stub.php'),
             $context,
             $force
@@ -181,5 +188,22 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
                 static fn(mixed $field): bool => $field instanceof FieldDefinition
             )
         );
+        $this->writer->writeTemplate(
+            $result,
+            "{$domainRoot}/PostTypes/{$class}/{$class}.php",
+            $this->stubs->get('taxonomy/entity.concrete.stub.php'),
+            $context,
+            false
+        );
+
+        $this->writer->writeTemplate(
+            $result,
+            "{$domainRoot}/PostTypes/{$class}/{$class}Repository.php",
+            $this->stubs->get('taxonomy/repository.concrete.stub.php'),
+            $context,
+            false
+        );
+
+        return $result;
     }
 }

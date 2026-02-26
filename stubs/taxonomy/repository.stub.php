@@ -8,6 +8,10 @@ use {{app_namespace}}\Domain\Taxonomies\{{taxonomy.class}}\{{taxonomy.class}};
 use Snowberry\WpMvc\Contracts\EntityValidatorInterface;
 use Snowberry\WpMvc\Contracts\TermDTO;
 use Snowberry\WpMvc\Contracts\TermMetaRepositoryInterface;
+namespace {{app_namespace}}\Domain\PostTypes\{{taxonomy.class}}\Generated;
+
+use {{app_namespace}}\Domain\PostTypes\{{taxonomy.class}}\{{taxonomy.class}};
+use Snowberry\WpMvc\Contracts\TermDTO;
 use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
 use Snowberry\WpMvc\Domain\Persistence\AbstractTaxonomyRepository;
 
@@ -22,6 +26,9 @@ class {{taxonomy.class}}RepositoryBase extends AbstractTaxonomyRepository
         ?EntityValidatorInterface $validator = null,
     ) {
         parent::__construct($termRepository, $validator);
+    public function __construct(TermRepositoryInterface $termRepository)
+    {
+        parent::__construct($termRepository);
     }
 
     protected function taxonomy(): string
