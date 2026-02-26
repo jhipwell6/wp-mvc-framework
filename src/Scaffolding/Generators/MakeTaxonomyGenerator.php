@@ -34,10 +34,14 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
 
         $slug = strtolower($name);
         $class = Naming::studly($slug);
+        $label = $options['label'] ?? Naming::title($slug);
+        $postTypes = $options['post-types'] ?? ['post'];
+        $hierarchical = (bool) ($options['hierarchical'] ?? true);
 
         $appNamespace = $this->manifest->namespace();
 
         $pluginRoot = rtrim($this->project->pluginRoot(), '/');
+        $contentRoot = $pluginRoot . '/' . $this->manifest->path('content');
         $domainRoot = $pluginRoot . '/' . $this->manifest->path('domain');
 
         $result = new ScaffoldResult();
@@ -47,6 +51,9 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
             'taxonomy' => [
                 'slug' => $slug,
                 'class' => $class,
+                'label' => $label,
+                'post_types_php' => $this->exportPhpArray(is_array($postTypes) ? $postTypes : [$postTypes]),
+                'hierarchical_php' => $hierarchical ? 'true' : 'false',
                 'fields' => '',
                 'field_hydration' => '',
                 'field_meta_persistence' => '',
@@ -58,6 +65,14 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
         $context['taxonomy']['fields'] = implode("\n", $propertyLines);
         $context['taxonomy']['field_hydration'] = implode("\n", $hydrationLines);
         $context['taxonomy']['field_meta_persistence'] = implode("\n", $metaPersistenceLines);
+
+        $this->writer->writeTemplate(
+            $result,
+            "{$contentRoot}/Taxonomies/{$slug}.php",
+            $this->stubs->get('taxonomy/definition.stub.php'),
+            $context,
+            $force
+        );
 
         $this->writer->writeTemplate(
             $result,
@@ -73,6 +88,22 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
             $this->stubs->get('taxonomy/repository.stub.php'),
             $context,
             $force
+        );
+
+        $this->writer->writeTemplate(
+            $result,
+            "{$domainRoot}/Taxonomies/{$class}/{$class}.php",
+            $this->stubs->get('taxonomy/entity.concrete.stub.php'),
+            $context,
+            false
+        );
+
+        $this->writer->writeTemplate(
+            $result,
+            "{$domainRoot}/Taxonomies/{$class}/{$class}Repository.php",
+            $this->stubs->get('taxonomy/repository.concrete.stub.php'),
+            $context,
+            false
         );
 
         $result->notes[] = "Generated taxonomy base model/repository for {$slug}.";
@@ -181,22 +212,14 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
                 static fn(mixed $field): bool => $field instanceof FieldDefinition
             )
         );
-        $this->writer->writeTemplate(
-            $result,
-            "{$domainRoot}/Taxonomies/{$class}/{$class}.php",
-            $this->stubs->get('taxonomy/entity.concrete.stub.php'),
-            $context,
-            false
-        );
+    }
 
-        $this->writer->writeTemplate(
-            $result,
-            "{$domainRoot}/Taxonomies/{$class}/{$class}Repository.php",
-            $this->stubs->get('taxonomy/repository.concrete.stub.php'),
-            $context,
-            false
-        );
-
-        return $result;
+    /**
+     * @param array<int, string> $values
+     */
+    private function exportPhpArray(array $values): string
+    {
+        $items = array_map(static fn(string $value): string => var_export($value, true), $values);
+        return '[' . implode(', ', $items) . ']';
     }
 }
