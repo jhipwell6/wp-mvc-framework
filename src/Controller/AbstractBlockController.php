@@ -11,12 +11,14 @@ use Snowberry\WpMvc\Core\Container;
 
 abstract class AbstractBlockController implements BlockDefinitionInterface
 {
+	protected AcfFieldServiceInterface $acf;
 
 	public function __construct(
 		protected Container $container,
 		protected ViewRendererInterface $viewRenderer
 	)
 	{
+		$this->acf = $this->container->get( AcfFieldServiceInterface::class );
 	}
 
 	protected function view( string $view, array $data = [] ): void
@@ -26,17 +28,17 @@ abstract class AbstractBlockController implements BlockDefinitionInterface
 
 	protected function field( string $key, int|string|null $context = null ): mixed
 	{
-		return $this->acfFieldService()->get( $key, $context );
+		return $this->acf->get( $key, $context );
+	}
+
+	protected function option( string $key ): mixed
+	{
+		return $this->acf->get( $key, 'option' );
 	}
 
 	protected function updateField( string $key, mixed $value, int|string|null $context = null ): void
 	{
-		$this->acfFieldService()->update( $key, $value, $context );
-	}
-
-	private function acfFieldService(): AcfFieldServiceInterface
-	{
-		return $this->container->get( AcfFieldServiceInterface::class );
+		$this->acf->update( $key, $value, $context );
 	}
 
 	abstract public function name(): string;
