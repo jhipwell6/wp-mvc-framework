@@ -19,6 +19,11 @@ interface TermRepositoryInterface
 	public function findForPost(int $postId, string $taxonomy): array;
 
 	/**
+	 * @param array<int, int> $termIds
+	 */
+	public function assignToPost(int $postId, string $taxonomy, array $termIds): void;
+
+	/**
 	 * @param array<string, mixed> $data
 	 */
 	public function insert(array $data): int;
