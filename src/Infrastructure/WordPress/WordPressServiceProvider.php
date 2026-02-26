@@ -8,6 +8,7 @@ use Snowberry\WpMvc\Core\Container;
 use Snowberry\WpMvc\Core\ServiceProvider;
 use Snowberry\WpMvc\Core\RegistrationRegistry;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
+use Snowberry\WpMvc\Contracts\UserMetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\UserRepositoryInterface;
 use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
 use Snowberry\WpMvc\Contracts\TermMetaRepositoryInterface;
@@ -43,6 +44,11 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			UserRepositoryInterface::class,
 			fn() => new WordPressUserRepository()
+		);
+
+		$container->singleton(
+			UserMetaRepositoryInterface::class,
+			fn() => new WordPressUserMetaRepository()
 		);
 
 		// Term Repository Adapter
