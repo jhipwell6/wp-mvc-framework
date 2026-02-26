@@ -41,6 +41,11 @@ abstract class AbstractTaxonomyRepository
 	 */
 	abstract protected function extractTermData(object $entity): array;
 
+	protected function acfContext(int $termId): string
+	{
+		return "term_{$termId}";
+	}
+
 	/**
 	 * @return T|null
 	 */

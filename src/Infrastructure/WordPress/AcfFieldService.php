@@ -10,6 +10,9 @@ use Snowberry\WpMvc\Contracts\AcfFieldServiceInterface;
 final class AcfFieldService implements AcfFieldServiceInterface
 {
 
+	/**
+	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
+	 */
 	public function get( string $field, int|string|null $context = null ): mixed
 	{
 		$this->ensureFunctionExists( 'get_field' );
