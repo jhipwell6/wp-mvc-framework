@@ -67,6 +67,23 @@ final class MakeUserGenerator implements ScaffoldGeneratorInterface
             $context,
             $force
         );
+      
+
+		$this->writer->writeTemplate(
+			$result,
+			"{$domainRoot}/Users/{$class}/{$class}.php",
+			$this->stubs->get('user/entity.concrete.stub.php'),
+			$context,
+			false
+		);
+
+		$this->writer->writeTemplate(
+			$result,
+			"{$domainRoot}/Users/{$class}/{$class}Repository.php",
+			$this->stubs->get('user/repository.concrete.stub.php'),
+			$context,
+			false
+		);
 
         $result->notes[] = "Generated user base model/repository for {$slug}.";
 
