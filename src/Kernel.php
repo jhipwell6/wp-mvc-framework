@@ -7,6 +7,7 @@ namespace Snowberry\WpMvc;
 use RuntimeException;
 use Snowberry\WpMvc\Core\Container;
 use Snowberry\WpMvc\Core\ServiceProvider;
+use Snowberry\WpMvc\Contracts\PolicyRegistryInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
 use Snowberry\WpMvc\Infrastructure\WordPress\WordPressServiceProvider;
@@ -40,14 +41,6 @@ final class Kernel
 		);
 
 		$this->container->addProvider(
-			new ControllerServiceProvider()
-		);
-
-		$this->container->addProvider(
-			new BlockServiceProvider()
-		);
-
-		$this->container->addProvider(
 			new CliServiceProvider()
 		);
 	}
@@ -71,6 +64,35 @@ final class Kernel
 		}
 	}
 
+	private function registerControllerAndBlockProviders(): void
+	{
+		$this->container->addProvider(
+			new ControllerServiceProvider()
+		);
+
+		$this->container->addProvider(
+			new BlockServiceProvider()
+		);
+	}
+
+	private function registerManifestPolicies(): void
+	{
+		$registry = $this->container->get( PolicyRegistryInterface::class );
+		$manifest = $this->container->get( ProjectManifestInterface::class );
+
+		foreach ( $manifest->policies() as $resourceClass => $policyClass ) {
+			if ( ! class_exists( $resourceClass ) ) {
+				throw new RuntimeException( "Manifest policy resource class [{$resourceClass}] does not exist." );
+			}
+
+			if ( ! class_exists( $policyClass ) ) {
+				throw new RuntimeException( "Manifest policy class [{$policyClass}] does not exist." );
+			}
+
+			$registry->add( $resourceClass, $policyClass );
+		}
+	}
+
 	/**
 	 * Allow client apps to register additional providers.
 	 */
@@ -84,28 +106,42 @@ final class Kernel
 	 */
 	public function boot(): void
 	{
-		$initialProviderCount = count( $this->container->getProviders() );
+		$frameworkProviderCount = count( $this->container->getProviders() );
 
 		// 1. Register framework services.
-		for ( $index = 0; $index < $initialProviderCount; $index++ ) {
+		for ( $index = 0; $index < $frameworkProviderCount; $index++ ) {
 			$this->container->getProviders()[$index]->register( $this->container );
 		}
 
 		// 2. Register manifest providers after framework providers.
 		$this->registerManifestProviders();
 
+		$manifestProviderEndIndex = count( $this->container->getProviders() );
+
 		// 3. Register services for providers added from the manifest.
-		$allProviders = $this->container->getProviders();
-		for ( $index = $initialProviderCount; $index < count( $allProviders ); $index++ ) {
-			$allProviders[$index]->register( $this->container );
+		for ( $index = $frameworkProviderCount; $index < $manifestProviderEndIndex; $index++ ) {
+			$this->container->getProviders()[$index]->register( $this->container );
 		}
 
-		// 4. Boot services.
+		// 4. Register policies declared in the manifest.
+		$this->registerManifestPolicies();
+
+		// 5. Register controller and block providers after policy registration.
+		$this->registerControllerAndBlockProviders();
+
+		$allProviderEndIndex = count( $this->container->getProviders() );
+
+		// 6. Register services for controller and block providers.
+		for ( $index = $manifestProviderEndIndex; $index < $allProviderEndIndex; $index++ ) {
+			$this->container->getProviders()[$index]->register( $this->container );
+		}
+
+		// 7. Boot services.
 		foreach ( $this->container->getProviders() as $provider ) {
 			$provider->boot( $this->container );
 		}
 
-		// 5. Execute registration layer.
+		// 8. Execute registration layer.
 		$this->container
 			->get( RegistrationRegistryInterface::class )
 			->registerAll();
