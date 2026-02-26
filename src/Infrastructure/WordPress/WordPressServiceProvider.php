@@ -8,6 +8,7 @@ use Snowberry\WpMvc\Core\Container;
 use Snowberry\WpMvc\Core\ServiceProvider;
 use Snowberry\WpMvc\Core\RegistrationRegistry;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
+use Snowberry\WpMvc\Contracts\UserMetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\UserRepositoryInterface;
 use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
 use Snowberry\WpMvc\Contracts\TermMetaRepositoryInterface;
@@ -23,6 +24,10 @@ use Snowberry\WpMvc\Contracts\ViewRendererInterface;
 use Snowberry\WpMvc\Contracts\ProjectLocatorInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
+use Snowberry\WpMvc\Contracts\PermissionCheckerInterface;
+use Snowberry\WpMvc\Contracts\PolicyRegistryInterface;
+use Snowberry\WpMvc\Core\PolicyRegistry;
+use Snowberry\WpMvc\Contracts\RoleManagerInterface;
 
 final class WordPressServiceProvider extends ServiceProvider
 {
@@ -43,6 +48,11 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			UserRepositoryInterface::class,
 			fn() => new WordPressUserRepository()
+		);
+
+		$container->singleton(
+			UserMetaRepositoryInterface::class,
+			fn() => new WordPressUserMetaRepository()
 		);
 
 		// Term Repository Adapter
@@ -67,6 +77,11 @@ final class WordPressServiceProvider extends ServiceProvider
 		);
 
 		$container->singleton(
+			RoleManagerInterface::class,
+			fn() => new WordPressRoleManager()
+		);
+
+		$container->singleton(
 			AcfFieldServiceInterface::class,
 			fn() => new AcfFieldService()
 		);
@@ -79,6 +94,16 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			CacheInterface::class,
 			fn() => new TransientCache()
+		);
+
+		$container->singleton(
+			PermissionCheckerInterface::class,
+			fn() => new WordPressPermissionChecker()
+		);
+
+		$container->singleton(
+			PolicyRegistryInterface::class,
+			fn( Container $c ) => new PolicyRegistry( $c )
 		);
 
 		$container->singleton(

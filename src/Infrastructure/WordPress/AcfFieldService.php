@@ -11,8 +11,9 @@ final class AcfFieldService implements AcfFieldServiceInterface
 {
 
 	/**
-	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
-	 *                                 Use 'option' for global options page values.
+	 * @param int|string|null $context Post ID, user context like "user_{$userId}",
+	 *                                 taxonomy term context like "term_{$termId}",
+	 *                                 or 'option' for global options page values.
 	 */
 	public function get( string $field, int|string|null $context = null ): mixed
 	{
@@ -22,8 +23,9 @@ final class AcfFieldService implements AcfFieldServiceInterface
 	}
 
 	/**
-	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
-	 *                                 Use 'option' for global options page values.
+	 * @param int|string|null $context Post ID, user context like "user_{$userId}",
+	 *                                 taxonomy term context like "term_{$termId}",
+	 *                                 or 'option' for global options page values.
 	 */
 	public function update( string $field, mixed $value, int|string|null $context = null ): void
 	{
@@ -33,8 +35,9 @@ final class AcfFieldService implements AcfFieldServiceInterface
 	}
 
 	/**
-	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
-	 *                                 Use 'option' for global options page values.
+	 * @param int|string|null $context Post ID, user context like "user_{$userId}",
+	 *                                 taxonomy term context like "term_{$termId}",
+	 *                                 or 'option' for global options page values.
 	 */
 	public function delete( string $field, int|string|null $context = null ): void
 	{

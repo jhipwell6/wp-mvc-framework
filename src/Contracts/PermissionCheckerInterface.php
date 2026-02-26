@@ -23,4 +23,12 @@ interface PermissionCheckerInterface
 	 * @param array<int, string> $roles
 	 */
 	public function hasAllRoles(array $roles, int $userId = 0): bool;
+	public function can(string $capability, int $userId = 0): bool;
+
+	public function cannot(string $capability, int $userId = 0): bool;
+
+	/**
+	 * @throws AuthorizationException
+	 */
+	public function require(string $capability, int $userId = 0): void;
 }
