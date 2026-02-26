@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Snowberry\WpMvc\Infrastructure\WordPress;
 
+use InvalidArgumentException;
 use RuntimeException;
 use Snowberry\WpMvc\Contracts\TermDTO;
 use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
@@ -54,6 +55,45 @@ final class WordPressTermRepository implements TermRepositoryInterface
 		}
 
 		return array_map(fn(WP_Term $term): TermDTO => $this->map($term), $terms);
+	}
+
+	public function findForPosts(array $postIds, string $taxonomy): array
+	{
+		$normalizedIds = array_values($postIds);
+
+		foreach ($normalizedIds as $postId) {
+			if (! is_int($postId) || $postId <= 0) {
+				throw new InvalidArgumentException('findForPosts expects an array of positive integer post IDs.');
+			}
+		}
+
+		if ($normalizedIds === []) {
+			return [];
+		}
+
+		$terms = wp_get_object_terms($normalizedIds, $taxonomy, [
+			'fields' => 'all_with_object_id',
+		]);
+
+		if ($terms instanceof WP_Error) {
+			$this->throwWordPressError($terms, 'Unable to fetch terms for posts.');
+		}
+
+		$grouped = [];
+
+		foreach ($normalizedIds as $postId) {
+			$grouped[$postId] = [];
+		}
+
+		foreach ($terms as $term) {
+			if (! $term instanceof WP_Term || ! isset($term->object_id)) {
+				throw new RuntimeException('Unexpected term type returned by wp_get_object_terms().');
+			}
+
+			$grouped[(int) $term->object_id][] = $this->map($term);
+		}
+
+		return $grouped;
 	}
 
 	/**

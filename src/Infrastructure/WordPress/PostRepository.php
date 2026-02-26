@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Snowberry\WpMvc\Infrastructure\WordPress;
 
+use InvalidArgumentException;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
 use Snowberry\WpMvc\Contracts\PostDTO;
 use WP_Query;
@@ -20,6 +21,44 @@ final class PostRepository implements PostRepositoryInterface
 		}
 
 		return $this->map( $post );
+	}
+
+	public function findMany( array $ids ): array
+	{
+		$normalizedIds = array_values( $ids );
+
+		foreach ( $normalizedIds as $id ) {
+			if ( ! is_int( $id ) || $id <= 0 ) {
+				throw new InvalidArgumentException( 'findMany expects an array of positive integer post IDs.' );
+			}
+		}
+
+		if ( $normalizedIds === [] ) {
+			return [];
+		}
+
+		$posts = get_posts([
+			'post__in' => array_values( array_unique( $normalizedIds ) ),
+			'posts_per_page' => -1,
+			'orderby' => 'post__in',
+			'post_status' => 'any',
+		]);
+
+		$mappedById = [];
+
+		foreach ( $posts as $post ) {
+			$mappedById[ $post->ID ] = $this->map( $post );
+		}
+
+		$ordered = [];
+
+		foreach ( $normalizedIds as $id ) {
+			if ( isset( $mappedById[ $id ] ) ) {
+				$ordered[ $id ] = $mappedById[ $id ];
+			}
+		}
+
+		return $ordered;
 	}
 
 	public function insert( array $data ): int

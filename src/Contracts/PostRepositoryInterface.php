@@ -9,6 +9,13 @@ interface PostRepositoryInterface
 
 	public function find( int $id ): ?PostDTO;
 
+	/**
+	 * @param array<int, int> $ids
+	 *
+	 * @return array<int, PostDTO>
+	 */
+	public function findMany( array $ids ): array;
+
 	public function insert( array $data ): int;
 
 	public function update( int $id, array $data ): bool;

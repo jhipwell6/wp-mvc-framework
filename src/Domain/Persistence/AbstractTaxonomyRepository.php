@@ -103,4 +103,92 @@ abstract class AbstractTaxonomyRepository
 	{
 		$this->termRepository->delete($id);
 	}
+
+	/**
+	 * @param T[] $entities
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function withMeta(array $entities): array
+	{
+		$termIds = [];
+
+		foreach ($entities as $entity) {
+			$termId = $this->extractTermId($entity);
+			if ($termId !== null) {
+				$termIds[] = $termId;
+			}
+		}
+
+		$termIds = array_values(array_unique($termIds));
+
+		if ($termIds === []) {
+			return [];
+		}
+
+		return $this->termMetaRepository->getMany($termIds);
+	}
+
+	/**
+	 * @param T[] $entities
+	 * @return array<int, array{entity: T, children: array<int, array{entity: T, children: array}>}>
+	 */
+	public function withChildren(array $entities): array
+	{
+		$rootIds = [];
+		foreach ($entities as $entity) {
+			$termId = $this->extractTermId($entity);
+			if ($termId !== null) {
+				$rootIds[] = $termId;
+			}
+		}
+
+		$rootIds = array_values(array_unique($rootIds));
+		if ($rootIds === []) {
+			return [];
+		}
+
+		$terms = $this->termRepository->findByTaxonomy($this->taxonomy());
+		$entitiesById = [];
+		$childrenByParent = [];
+
+		foreach ($terms as $term) {
+			$entitiesById[$term->term_id] = $this->map($term);
+			$childrenByParent[$term->parent][] = $term->term_id;
+		}
+
+		$hierarchy = [];
+		foreach ($rootIds as $rootId) {
+			$node = $this->buildChildrenHierarchyNode($rootId, $entitiesById, $childrenByParent);
+			if ($node !== null) {
+				$hierarchy[$rootId] = $node;
+			}
+		}
+
+		return $hierarchy;
+	}
+
+	/**
+	 * @param array<int, T> $entitiesById
+	 * @param array<int, array<int, int>> $childrenByParent
+	 * @return array{entity: T, children: array<int, array{entity: T, children: array}>}|null
+	 */
+	private function buildChildrenHierarchyNode(int $termId, array $entitiesById, array $childrenByParent): ?array
+	{
+		if (!isset($entitiesById[$termId])) {
+			return null;
+		}
+
+		$children = [];
+		foreach ($childrenByParent[$termId] ?? [] as $childId) {
+			$childNode = $this->buildChildrenHierarchyNode($childId, $entitiesById, $childrenByParent);
+			if ($childNode !== null) {
+				$children[] = $childNode;
+			}
+		}
+
+		return [
+			'entity' => $entitiesById[$termId],
+			'children' => $children,
+		];
+	}
 }

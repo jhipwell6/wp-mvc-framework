@@ -64,4 +64,6 @@ class {{post_type.class}}RepositoryBase extends AbstractPostTypeRepository
         /** @var {{post_type.class}} $entity */
 {{post_type.field_meta_persistence}}
     }
+
+{{post_type.relationship_repository_methods}}
 }
