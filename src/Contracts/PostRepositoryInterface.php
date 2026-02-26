@@ -22,5 +22,5 @@ interface PostRepositoryInterface
 
 	public function delete( int $id, bool $force = false ): bool;
 
-	public function query( array $args ): array;
+	public function query(): PostQueryBuilderInterface;
 }
