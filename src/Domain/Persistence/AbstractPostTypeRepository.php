@@ -12,6 +12,7 @@ use Snowberry\WpMvc\Contracts\PostDTO;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
 use Snowberry\WpMvc\Contracts\TermDTO;
 use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
+use Snowberry\WpMvc\Support\Collection;
 
 /**
  * @template T of object
@@ -68,6 +69,19 @@ abstract class AbstractPostTypeRepository
 		}
 
 		return $this->map($post);
+	}
+
+
+	/**
+	 * @param array<int, PostDTO> $postDTOs
+	 * @return Collection<T>
+	 */
+	public function hydrateMany(array $postDTOs): Collection
+	{
+		/** @var Collection<T> $entities */
+		$entities = (new Collection($postDTOs))->map(fn (PostDTO $post): object => $this->map($post));
+
+		return $entities;
 	}
 
 	/**
