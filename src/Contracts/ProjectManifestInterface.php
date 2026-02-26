@@ -20,4 +20,9 @@ interface ProjectManifestInterface
 	 * @return string[]
 	 */
 	public function blocks(): array;
+
+	/**
+	 * @return array<string,string>
+	 */
+	public function policies(): array;
 }
