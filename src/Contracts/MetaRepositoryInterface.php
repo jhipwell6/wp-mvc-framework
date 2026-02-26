@@ -14,4 +14,11 @@ interface MetaRepositoryInterface
 	public function delete( int $postId, string $key ): void;
 
 	public function all( int $postId ): array;
+
+	/**
+	 * @param array<int, int> $postIds
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function getMany( array $postIds ): array;
 }

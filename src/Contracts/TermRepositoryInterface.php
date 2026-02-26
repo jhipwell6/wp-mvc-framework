@@ -19,6 +19,13 @@ interface TermRepositoryInterface
 	public function findForPost(int $postId, string $taxonomy): array;
 
 	/**
+	 * @param array<int, int> $postIds
+	 *
+	 * @return array<int, array<int, TermDTO>>
+	 */
+	public function findForPosts(array $postIds, string $taxonomy): array;
+
+	/**
 	 * @param array<int, int> $termIds
 	 */
 	public function assignToPost(int $postId, string $taxonomy, array $termIds): void;
