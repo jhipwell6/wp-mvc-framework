@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Snowberry\WpMvc\Cli\Commands;
+namespace Snowberry\WpMvc\CLI;
 
 use RuntimeException;
 use Snowberry\WpMvc\Core\Container;
