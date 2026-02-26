@@ -9,6 +9,8 @@ use Snowberry\WpMvc\Contracts\EntityValidatorInterface;
 use Snowberry\WpMvc\Contracts\MetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\PostDTO;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
+use Snowberry\WpMvc\Contracts\TermDTO;
+use Snowberry\WpMvc\Contracts\TermRepositoryInterface;
 
 /**
  * @template T of object
@@ -18,6 +20,7 @@ abstract class AbstractPostTypeRepository
 	public function __construct(
 		protected PostRepositoryInterface $postRepository,
 		protected MetaRepositoryInterface $metaRepository,
+		protected TermRepositoryInterface $termRepository,
 		protected ?EntityValidatorInterface $validator = null
 	)
 	{
@@ -93,5 +96,13 @@ abstract class AbstractPostTypeRepository
 	public function delete(int $id): void
 	{
 		$this->postRepository->delete($id);
+	}
+
+	/**
+	 * @return array<int, TermDTO>
+	 */
+	protected function terms(int $postId, string $taxonomy): array
+	{
+		return $this->termRepository->findForPost($postId, $taxonomy);
 	}
 }
