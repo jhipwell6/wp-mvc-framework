@@ -12,6 +12,7 @@ final class AcfFieldService implements AcfFieldServiceInterface
 
 	/**
 	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
+	 *                                 Use 'option' for global options page values.
 	 */
 	public function get( string $field, int|string|null $context = null ): mixed
 	{
@@ -20,6 +21,10 @@ final class AcfFieldService implements AcfFieldServiceInterface
 		return get_field( $field, $context );
 	}
 
+	/**
+	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
+	 *                                 Use 'option' for global options page values.
+	 */
 	public function update( string $field, mixed $value, int|string|null $context = null ): void
 	{
 		$this->ensureFunctionExists( 'update_field' );
@@ -27,6 +32,10 @@ final class AcfFieldService implements AcfFieldServiceInterface
 		update_field( $field, $value, $context );
 	}
 
+	/**
+	 * @param int|string|null $context Taxonomy terms must use the explicit "term_{$termId}" context string.
+	 *                                 Use 'option' for global options page values.
+	 */
 	public function delete( string $field, int|string|null $context = null ): void
 	{
 		$this->ensureFunctionExists( 'delete_field' );
