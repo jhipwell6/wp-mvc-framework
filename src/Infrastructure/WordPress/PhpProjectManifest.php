@@ -90,4 +90,28 @@ final class PhpProjectManifest implements ProjectManifestInterface
 
 		return $blocks;
 	}
+
+	/**
+	 * @return array<string,string>
+	 */
+	public function policies(): array
+	{
+		if ( ! array_key_exists( 'policies', $this->config ) ) {
+			return [];
+		}
+
+		$policies = $this->config['policies'];
+
+		if ( ! is_array( $policies ) ) {
+			throw new RuntimeException( 'Manifest policies must be an array mapping resource class names to policy class names.' );
+		}
+
+		foreach ( $policies as $resourceClass => $policyClass ) {
+			if ( ! is_string( $resourceClass ) || ! is_string( $policyClass ) ) {
+				throw new RuntimeException( 'Manifest policies must be an array mapping resource class names to policy class names.' );
+			}
+		}
+
+		return $policies;
+	}
 }
