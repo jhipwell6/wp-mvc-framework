@@ -76,4 +76,9 @@ abstract class AbstractUserRepository
 	{
 		$this->userRepository->delete($id);
 	}
+
+	protected function acfContext(int $userId): string
+	{
+		return "user_{$userId}";
+	}
 }
