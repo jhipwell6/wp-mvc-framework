@@ -24,6 +24,9 @@ use Snowberry\WpMvc\Contracts\ViewRendererInterface;
 use Snowberry\WpMvc\Contracts\ProjectLocatorInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
+use Snowberry\WpMvc\Contracts\PermissionCheckerInterface;
+use Snowberry\WpMvc\Contracts\PolicyRegistryInterface;
+use Snowberry\WpMvc\Core\PolicyRegistry;
 use Snowberry\WpMvc\Contracts\RoleManagerInterface;
 
 final class WordPressServiceProvider extends ServiceProvider
@@ -91,6 +94,16 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			CacheInterface::class,
 			fn() => new TransientCache()
+		);
+
+		$container->singleton(
+			PermissionCheckerInterface::class,
+			fn() => new WordPressPermissionChecker()
+		);
+
+		$container->singleton(
+			PolicyRegistryInterface::class,
+			fn( Container $c ) => new PolicyRegistry( $c )
 		);
 
 		$container->singleton(
