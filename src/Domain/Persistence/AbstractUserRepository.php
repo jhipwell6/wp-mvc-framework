@@ -6,6 +6,7 @@ namespace Snowberry\WpMvc\Domain\Persistence;
 
 use RuntimeException;
 use Snowberry\WpMvc\Contracts\UserDTO;
+use Snowberry\WpMvc\Contracts\UserMetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\UserRepositoryInterface;
 
 /**
@@ -14,7 +15,8 @@ use Snowberry\WpMvc\Contracts\UserRepositoryInterface;
 abstract class AbstractUserRepository
 {
 	public function __construct(
-		protected UserRepositoryInterface $userRepository
+		protected UserRepositoryInterface $userRepository,
+		protected UserMetaRepositoryInterface $userMetaRepository
 	)
 	{
 	}
@@ -34,6 +36,12 @@ abstract class AbstractUserRepository
 	 * @return array<string, mixed>
 	 */
 	abstract protected function extractUserData(object $entity): array;
+
+
+	/**
+	 * @param T $entity
+	 */
+	abstract protected function saveMeta(int $userId, object $entity): void;
 
 	/**
 	 * @return T|null
@@ -63,6 +71,8 @@ abstract class AbstractUserRepository
 		} else {
 			$this->userRepository->update($userId, $data);
 		}
+
+		$this->saveMeta($userId, $entity);
 
 		$reloaded = $this->find($userId);
 		if ($reloaded === null) {
