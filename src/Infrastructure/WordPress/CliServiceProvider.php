@@ -7,6 +7,7 @@ use Snowberry\WpMvc\Core\Container;
 use Snowberry\WpMvc\Core\ServiceProvider;
 use Snowberry\WpMvc\CLI\CommandRegistry;
 use Snowberry\WpMvc\CLI\MakePostTypeCommand;
+use Snowberry\WpMvc\Cli\Commands\MakeTaxonomyCommand;
 use Snowberry\WpMvc\Contracts\FilesystemInterface;
 use Snowberry\WpMvc\Contracts\ProjectLocatorInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
@@ -17,6 +18,7 @@ use Snowberry\WpMvc\Infrastructure\SimpleTemplateRenderer;
 use Snowberry\WpMvc\Scaffolding\FileStubRepository;
 use Snowberry\WpMvc\Scaffolding\ScaffoldWriter;
 use Snowberry\WpMvc\Scaffolding\Generators\MakePostTypeGenerator;
+use Snowberry\WpMvc\Scaffolding\Generators\MakeTaxonomyGenerator;
 
 final class CliServiceProvider extends ServiceProvider
 {
@@ -56,6 +58,18 @@ final class CliServiceProvider extends ServiceProvider
                 $c->get(ScaffoldWriter::class),
             );
         });
+
+        // Generator binding (taxonomy)
+        $container->singleton(MakeTaxonomyGenerator::class, function (Container $c) {
+            return new MakeTaxonomyGenerator(
+                $c->get(ProjectLocatorInterface::class),
+                $c->get(ProjectManifestInterface::class),
+                $c->get(FileStubRepository::class),
+                $c->get(ScaffoldWriter::class),
+                $c->get(\Snowberry\WpMvc\Contracts\FieldProviderInterface::class),
+                $c->get(\Snowberry\WpMvc\Scaffolding\AcfTypeMapper::class),
+            );
+        });
     }
 
     public function boot(Container $container): void
@@ -69,6 +83,8 @@ final class CliServiceProvider extends ServiceProvider
         $registry->add(new MakePostTypeCommand(
             $container->get(ScaffoldGeneratorInterface::class)
         ));
+
+        $registry->add(new MakeTaxonomyCommand($container));
 
         $registry->registerAll();
     }
