@@ -11,57 +11,48 @@ use WP_User;
 
 final class WordPressPermissionChecker implements PermissionCheckerInterface
 {
-	public function hasCapability(string $capability, int $userId = 0): bool
+
+	public function can( string $capability, int $userId = 0 ): bool
 	{
-		if ($userId === 0) {
-			return current_user_can($capability);
+		if ( $userId === 0 ) {
+			return current_user_can( $capability );
 		}
 
-		return user_can($userId, $capability);
+		return user_can( $userId, $capability );
 	}
 
-	public function requireCapability(string $capability, int $userId = 0): void
+	public function cannot( string $capability, int $userId = 0 ): bool
 	{
-		if (! $this->hasCapability($capability, $userId)) {
-			throw new AuthorizationException($capability, 'capability', $this->resolveUserId($userId));
-		}
+		return ! $this->can( $capability, $userId );
 	}
 
-	public function can(string $capability, int $userId = 0): bool
+	public function require( string $capability, int $userId = 0 ): void
 	{
-		return $this->hasCapability($capability, $userId);
-	}
-
-	public function cannot(string $capability, int $userId = 0): bool
-	{
-		return ! $this->can($capability, $userId);
-	}
-
-	public function require(string $capability, int $userId = 0): void
-	{
-		$this->requireCapability($capability, $userId);
-	}
-
-	public function hasRole(string $role, int $userId = 0): bool
-	{
-		$user = $this->resolveUser($userId);
-
-		return in_array($role, $user->roles, true);
-	}
-
-	public function requireRole(string $role, int $userId = 0): void
-	{
-		if (! $this->hasRole($role, $userId)) {
-			throw new AuthorizationException($role, 'role', $this->resolveUserId($userId));
+		if ( $this->cannot( $capability, $userId ) ) {
+			throw new AuthorizationException( $capability, 'capability', $this->resolveUserId( $userId ) );
 		}
 	}
 
-	public function hasAnyRole(array $roles, int $userId = 0): bool
+	public function hasRole( string $role, int $userId = 0 ): bool
 	{
-		$user = $this->resolveUser($userId);
+		$user = $this->resolveUser( $userId );
 
-		foreach ($roles as $role) {
-			if (in_array($role, $user->roles, true)) {
+		return in_array( $role, $user->roles, true );
+	}
+
+	public function requireRole( string $role, int $userId = 0 ): void
+	{
+		if ( ! $this->hasRole( $role, $userId ) ) {
+			throw new AuthorizationException( $role, 'role', $this->resolveUserId( $userId ) );
+		}
+	}
+
+	public function hasAnyRole( array $roles, int $userId = 0 ): bool
+	{
+		$user = $this->resolveUser( $userId );
+
+		foreach ( $roles as $role ) {
+			if ( in_array( $role, $user->roles, true ) ) {
 				return true;
 			}
 		}
@@ -69,12 +60,12 @@ final class WordPressPermissionChecker implements PermissionCheckerInterface
 		return false;
 	}
 
-	public function hasAllRoles(array $roles, int $userId = 0): bool
+	public function hasAllRoles( array $roles, int $userId = 0 ): bool
 	{
-		$user = $this->resolveUser($userId);
+		$user = $this->resolveUser( $userId );
 
-		foreach ($roles as $role) {
-			if (! in_array($role, $user->roles, true)) {
+		foreach ( $roles as $role ) {
+			if ( ! in_array( $role, $user->roles, true ) ) {
 				return false;
 			}
 		}
@@ -82,27 +73,27 @@ final class WordPressPermissionChecker implements PermissionCheckerInterface
 		return true;
 	}
 
-	private function resolveUser(int $userId): WP_User
+	private function resolveUser( int $userId ): WP_User
 	{
-		$resolvedUserId = $this->resolveUserId($userId);
-		$user = get_userdata($resolvedUserId);
+		$resolvedUserId = $this->resolveUserId( $userId );
+		$user = get_userdata( $resolvedUserId );
 
-		if (! $user instanceof WP_User) {
-			throw new RuntimeException(sprintf('Unable to resolve WordPress user %d.', $resolvedUserId));
+		if ( ! $user instanceof WP_User ) {
+			throw new RuntimeException( sprintf( 'Unable to resolve WordPress user %d.', $resolvedUserId ) );
 		}
 
 		return $user;
 	}
 
-	private function resolveUserId(int $userId): int
+	private function resolveUserId( int $userId ): int
 	{
-		if ($userId !== 0) {
+		if ( $userId !== 0 ) {
 			return $userId;
 		}
 
 		$currentUserId = get_current_user_id();
-		if ($currentUserId <= 0) {
-			throw new RuntimeException('No current WordPress user is authenticated.');
+		if ( $currentUserId <= 0 ) {
+			throw new RuntimeException( 'No current WordPress user is authenticated.' );
 		}
 
 		return $currentUserId;
