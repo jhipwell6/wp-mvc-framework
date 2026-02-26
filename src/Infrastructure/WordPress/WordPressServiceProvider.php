@@ -23,6 +23,7 @@ use Snowberry\WpMvc\Contracts\ViewRendererInterface;
 use Snowberry\WpMvc\Contracts\ProjectLocatorInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
+use Snowberry\WpMvc\Contracts\RoleManagerInterface;
 
 final class WordPressServiceProvider extends ServiceProvider
 {
@@ -64,6 +65,11 @@ final class WordPressServiceProvider extends ServiceProvider
 		$container->singleton(
 			OptionRepositoryInterface::class,
 			fn() => new WordPressOptionRepository()
+		);
+
+		$container->singleton(
+			RoleManagerInterface::class,
+			fn() => new WordPressRoleManager()
 		);
 
 		$container->singleton(
