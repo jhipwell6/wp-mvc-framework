@@ -5,35 +5,12 @@ declare(strict_types=1);
 namespace Snowberry\WpMvc\Infrastructure\WordPress;
 
 use RuntimeException;
-use Snowberry\WpMvc\Contracts\PermissionCheckerInterface;
-use Snowberry\WpMvc\Exceptions\AuthorizationException;
 use Snowberry\WpMvc\Contracts\AuthorizationException;
 use Snowberry\WpMvc\Contracts\PermissionCheckerInterface;
 use WP_User;
 
 final class WordPressPermissionChecker implements PermissionCheckerInterface
 {
-  public function can(string $capability, int $userId = 0): bool
-	{
-		if ($userId > 0) {
-			return user_can($userId, $capability);
-		}
-
-		return current_user_can($capability);
-	}
-
-	public function cannot(string $capability, int $userId = 0): bool
-	{
-		return ! $this->can($capability, $userId);
-	}
-
-	public function require(string $capability, int $userId = 0): void
-	{
-		if ($this->cannot($capability, $userId)) {
-			throw new AuthorizationException($capability, 'capability', $userId);
-		}
-	}
-  
 	public function hasCapability(string $capability, int $userId = 0): bool
 	{
 		if ($userId === 0) {
@@ -46,8 +23,23 @@ final class WordPressPermissionChecker implements PermissionCheckerInterface
 	public function requireCapability(string $capability, int $userId = 0): void
 	{
 		if (! $this->hasCapability($capability, $userId)) {
-			throw new AuthorizationException(sprintf('User %d lacks capability "%s".', $this->resolveUserId($userId), $capability));
+			throw new AuthorizationException($capability, 'capability', $this->resolveUserId($userId));
 		}
+	}
+
+	public function can(string $capability, int $userId = 0): bool
+	{
+		return $this->hasCapability($capability, $userId);
+	}
+
+	public function cannot(string $capability, int $userId = 0): bool
+	{
+		return ! $this->can($capability, $userId);
+	}
+
+	public function require(string $capability, int $userId = 0): void
+	{
+		$this->requireCapability($capability, $userId);
 	}
 
 	public function hasRole(string $role, int $userId = 0): bool
@@ -60,7 +52,7 @@ final class WordPressPermissionChecker implements PermissionCheckerInterface
 	public function requireRole(string $role, int $userId = 0): void
 	{
 		if (! $this->hasRole($role, $userId)) {
-			throw new AuthorizationException(sprintf('User %d lacks role "%s".', $this->resolveUserId($userId), $role));
+			throw new AuthorizationException($role, 'role', $this->resolveUserId($userId));
 		}
 	}
 
@@ -114,5 +106,5 @@ final class WordPressPermissionChecker implements PermissionCheckerInterface
 		}
 
 		return $currentUserId;
-  }
+	}
 }
