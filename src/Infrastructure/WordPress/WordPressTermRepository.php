@@ -56,6 +56,18 @@ final class WordPressTermRepository implements TermRepositoryInterface
 		return array_map(fn(WP_Term $term): TermDTO => $this->map($term), $terms);
 	}
 
+	/**
+	 * @param array<int, int> $termIds
+	 */
+	public function assignToPost(int $postId, string $taxonomy, array $termIds): void
+	{
+		$result = wp_set_object_terms($postId, $termIds, $taxonomy);
+
+		if ($result instanceof WP_Error) {
+			$this->throwWordPressError($result, 'Unable to assign terms to post.');
+		}
+	}
+
 	public function insert(array $data): int
 	{
 		$name = $data['name'] ?? null;

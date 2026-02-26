@@ -37,6 +37,7 @@ final class WordPressServiceProvider extends ServiceProvider
 			fn() => new PostRepository()
 		);
 
+		// Term Repository Adapter
 		$container->singleton(
 			TermRepositoryInterface::class,
 			fn() => new WordPressTermRepository()
