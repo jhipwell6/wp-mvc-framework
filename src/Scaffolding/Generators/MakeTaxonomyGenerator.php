@@ -37,6 +37,7 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
         $label = $options['label'] ?? Naming::title($slug);
         $postTypes = $options['post-types'] ?? ['post'];
         $hierarchical = (bool) ($options['hierarchical'] ?? true);
+        $rewrite = $this->buildRewriteOption($slug, $options['rewrite'] ?? null);
 
         $appNamespace = $this->manifest->namespace();
 
@@ -54,6 +55,7 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
                 'label' => $label,
                 'post_types_php' => $this->exportPhpArray(is_array($postTypes) ? $postTypes : [$postTypes]),
                 'hierarchical_php' => $hierarchical ? 'true' : 'false',
+                'rewrite_php' => $rewrite,
                 'fields' => '',
                 'field_hydration' => '',
                 'field_meta_persistence' => '',
@@ -109,6 +111,26 @@ final class MakeTaxonomyGenerator implements ScaffoldGeneratorInterface
         $result->notes[] = "Generated taxonomy base model/repository for {$slug}.";
 
         return $result;
+    }
+
+
+    private function buildRewriteOption(string $defaultSlug, mixed $rewriteOption): string
+    {
+        if ($rewriteOption === null || $rewriteOption === '') {
+            return "['slug' => " . var_export($defaultSlug, true) . ", 'with_front' => false]";
+        }
+
+        $rewrite = strtolower(trim((string) $rewriteOption));
+
+        if (in_array($rewrite, ['0', 'false', 'off'], true)) {
+            return 'false';
+        }
+
+        if (in_array($rewrite, ['1', 'true', 'on'], true)) {
+            return "['slug' => " . var_export($defaultSlug, true) . ", 'with_front' => false]";
+        }
+
+        return "['slug' => " . var_export((string) $rewriteOption, true) . ", 'with_front' => false]";
     }
 
     /**

@@ -34,15 +34,16 @@ final class MakeTaxonomyCommand
         $slug = trim((string) ($args[0] ?? ''));
 
         if ($slug === '' || ! preg_match('/^[a-z0-9_\-]+$/', $slug)) {
-            \WP_CLI::error('Usage: wp wp-mvc make:taxonomy <slug> [--force]');
+            \WP_CLI::error('Usage: wp wp-mvc make:taxonomy <slug> [--rewrite=<slug|false>] [--force]');
             return;
         }
 
         $force = isset($assocArgs['force']);
+        $rewrite = $assocArgs['rewrite'] ?? null;
 
         try {
             $generator = $this->container->get(MakeTaxonomyGenerator::class);
-            $generator->generate($slug, ['force' => $force]);
+            $generator->generate($slug, ['force' => $force, 'rewrite' => $rewrite]);
         } catch (RuntimeException $e) {
             \WP_CLI::error($e->getMessage());
             return;
