@@ -14,18 +14,16 @@ use Snowberry\WpMvc\Exceptions\AuthorizationException;
 
 abstract class AbstractBlockController implements BlockDefinitionInterface
 {
-	protected AcfFieldServiceInterface $acf;
 	private ?PermissionCheckerInterface $permissionChecker;
 	private ?PolicyRegistryInterface $policyRegistry;
 
 	public function __construct(
-		protected Container $container,
 		protected ViewRendererInterface $viewRenderer,
+		protected AcfFieldServiceInterface $acf,
 		?PermissionCheckerInterface $permissionChecker = null,
 		?PolicyRegistryInterface $policyRegistry = null
 	)
 	{
-		$this->acf = $this->container->get( AcfFieldServiceInterface::class );
 		$this->permissionChecker = $permissionChecker;
 		$this->policyRegistry = $policyRegistry;
 	}

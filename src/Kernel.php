@@ -10,6 +10,9 @@ use Snowberry\WpMvc\Core\ServiceProvider;
 use Snowberry\WpMvc\Contracts\PolicyRegistryInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
+use Snowberry\WpMvc\Contracts\ViewRendererInterface;
+use Snowberry\WpMvc\Contracts\AcfFieldServiceInterface;
+use Snowberry\WpMvc\Controller\AbstractBlockController;
 use Snowberry\WpMvc\Infrastructure\WordPress\WordPressServiceProvider;
 use Snowberry\WpMvc\Infrastructure\WordPress\DiscoveryServiceProvider;
 use Snowberry\WpMvc\Infrastructure\WordPress\ControllerServiceProvider;
@@ -109,7 +112,7 @@ final class Kernel
 		$frameworkProviderCount = count( $this->container->getProviders() );
 
 		// 1. Register framework services.
-		for ( $index = 0; $index < $frameworkProviderCount; $index++ ) {
+		for ( $index = 0; $index < $frameworkProviderCount; $index ++ ) {
 			$this->container->getProviders()[$index]->register( $this->container );
 		}
 
@@ -119,7 +122,7 @@ final class Kernel
 		$manifestProviderEndIndex = count( $this->container->getProviders() );
 
 		// 3. Register services for providers added from the manifest.
-		for ( $index = $frameworkProviderCount; $index < $manifestProviderEndIndex; $index++ ) {
+		for ( $index = $frameworkProviderCount; $index < $manifestProviderEndIndex; $index ++ ) {
 			$this->container->getProviders()[$index]->register( $this->container );
 		}
 
@@ -130,9 +133,21 @@ final class Kernel
 		$this->registerControllerAndBlockProviders();
 
 		$allProviderEndIndex = count( $this->container->getProviders() );
+		
+		$this->container->registerResolver(
+			AbstractBlockController::class,
+			function ( $c, $class ) {
+				return new $class(
+					$c->get( ViewRendererInterface::class ),
+					$c->get( AcfFieldServiceInterface::class ),
+					null,
+					null
+				);
+			}
+		);
 
 		// 6. Register services for controller and block providers.
-		for ( $index = $manifestProviderEndIndex; $index < $allProviderEndIndex; $index++ ) {
+		for ( $index = $manifestProviderEndIndex; $index < $allProviderEndIndex; $index ++ ) {
 			$this->container->getProviders()[$index]->register( $this->container );
 		}
 

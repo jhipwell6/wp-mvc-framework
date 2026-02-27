@@ -11,6 +11,7 @@ final class Container
 	private array $bindings = [];
 	private array $instances = [];
 	private array $providers = [];
+	protected array $resolvers = [];
 
 	public function bind( string $abstract, Closure $factory ): void
 	{
@@ -29,15 +30,17 @@ final class Container
 
 	public function get( string $abstract ): mixed
 	{
-		if ( ! isset( $this->bindings[$abstract] ) ) {
-			if ( ! class_exists( $abstract ) ) {
-				throw new \RuntimeException( "Cannot resolve [$abstract]" );
-			}
-
-			return new $abstract();
+		if ( isset( $this->bindings[$abstract] ) ) {
+			return ($this->bindings[$abstract])( $this );
 		}
 
-		return $this->bindings[$abstract]( $this );
+		foreach ( $this->resolvers as $base => $resolver ) {
+			if ( is_subclass_of( $abstract, $base ) ) {
+				return $resolver( $this, $abstract );
+			}
+		}
+
+		throw new \RuntimeException( "Cannot resolve [$abstract]. No binding registered." );
 	}
 
 	public function addProvider( ServiceProvider $provider ): void
@@ -48,5 +51,10 @@ final class Container
 	public function getProviders(): array
 	{
 		return $this->providers;
+	}
+
+	public function registerResolver( string $baseClass, callable $resolver ): void
+	{
+		$this->resolvers[$baseClass] = $resolver;
 	}
 }
