@@ -58,15 +58,28 @@ final class Container
 		$dependencies = [];
 
 		foreach ( $constructor->getParameters() as $parameter ) {
+
 			$type = $parameter->getType();
 
 			if ( ! $type || $type->isBuiltin() ) {
-				throw new \RuntimeException(
+				throw new RuntimeException(
 						"Cannot resolve parameter \${$parameter->getName()} in [$class]"
 					);
 			}
 
-			$dependencies[] = $this->get( $type->getName() );
+			$typeName = $type->getName();
+
+			try {
+				$dependencies[] = $this->get( $typeName );
+			} catch ( \RuntimeException $e ) {
+
+				if ( $parameter->allowsNull() ) {
+					$dependencies[] = null;
+					continue;
+				}
+
+				throw $e;
+			}
 		}
 
 		return $reflection->newInstanceArgs( $dependencies );
