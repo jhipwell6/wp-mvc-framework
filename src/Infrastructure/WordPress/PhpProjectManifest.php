@@ -31,7 +31,11 @@ final class PhpProjectManifest implements ProjectManifestInterface
 
 	public function namespace(): string
 	{
-		return $this->config['namespace'] ?? throw new RuntimeException( 'Manifest missing namespace.' );
+		if ( ! isset( $this->config['namespace'] ) ) {
+			throw new RuntimeException( 'Manifest missing namespace.' );
+		}
+		
+		return $this->config['namespace'];
 	}
 
 	public function path( string $key ): string
