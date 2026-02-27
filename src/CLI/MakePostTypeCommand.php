@@ -31,7 +31,7 @@ final class MakePostTypeCommand extends AbstractCommand
 	{
 		$slug = $args[0] ?? '';
 		if ( $slug === '' ) {
-			$this->error( 'Usage: wp wp-mvc make:post-type <slug> [--label=] [--supports=title,editor] [--archive=1|0] [--force]' );
+			$this->error( 'Usage: wp wp-mvc make:post-type <slug> [--label=] [--supports=title,editor] [--archive=1|0] [--rewrite=<slug|false>] [--force]' );
 			return;
 		}
 
@@ -41,6 +41,7 @@ final class MakePostTypeCommand extends AbstractCommand
 			'label' => $assocArgs['label'] ?? null,
 			'supports' => $supports ?: null,
 			'archive' => isset( $assocArgs['archive'] ) ? (bool) intval( (string) $assocArgs['archive'] ) : null,
+			'rewrite' => $assocArgs['rewrite'] ?? null,
 			'force' => isset( $assocArgs['force'] ),
 			'with_acf' => isset( $assocArgs['with-acf'] ),
 			// leave app_namespace overridable for later

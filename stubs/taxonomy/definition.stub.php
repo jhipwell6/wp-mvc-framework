@@ -10,5 +10,6 @@ return TaxonomyBuilder::make('{{taxonomy.slug}}')
     ->for({{taxonomy.post_types_php}})
     ->label('{{taxonomy.label}}')
     ->hierarchical({{taxonomy.hierarchical_php}})
+    ->rewrite({{taxonomy.rewrite_php}})
     ->rest(true)
     ->build();

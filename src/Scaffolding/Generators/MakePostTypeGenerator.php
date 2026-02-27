@@ -40,6 +40,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 		$label = $options['label'] ?? Naming::title( $slug );
 		$supports = $options['supports'] ?? [ 'title', 'editor' ];
 		$archive = $options['archive'] ?? true;
+		$rewrite = $this->buildRewriteOption( $slug, $options['rewrite'] ?? null );
 
 		$appNamespace = $this->manifest->namespace();
 
@@ -57,6 +58,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 				'label' => $label,
 				'supports_php' => $this->exportPhpArray( $supports ),
 				'archive_php' => $archive === true ? 'true' : ($archive === false ? 'false' : var_export( $archive, true )),
+				'rewrite_php' => $rewrite,
 				'fields' => '',
 				'field_hydration' => '',
 				'field_meta_persistence' => '',
@@ -173,6 +175,26 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 		$result->notes[] = "Next: load src/Content/PostTypes/{$slug}.php into the registration registry (client provider later).";
 
 		return $result;
+	}
+
+
+	private function buildRewriteOption( string $defaultSlug, mixed $rewriteOption ): string
+	{
+		if ( $rewriteOption === null || $rewriteOption === '' ) {
+			return "['slug' => " . var_export( $defaultSlug, true ) . ", 'with_front' => false]";
+		}
+
+		$rewrite = strtolower( trim( (string) $rewriteOption ) );
+
+		if ( in_array( $rewrite, [ '0', 'false', 'off' ], true ) ) {
+			return 'false';
+		}
+
+		if ( in_array( $rewrite, [ '1', 'true', 'on' ], true ) ) {
+			return "['slug' => " . var_export( $defaultSlug, true ) . ", 'with_front' => false]";
+		}
+
+		return "['slug' => " . var_export( (string) $rewriteOption, true ) . ", 'with_front' => false]";
 	}
 
 	/**
