@@ -133,18 +133,6 @@ final class Kernel
 		$this->registerControllerAndBlockProviders();
 
 		$allProviderEndIndex = count( $this->container->getProviders() );
-		
-		$this->container->registerResolver(
-			AbstractBlockController::class,
-			function ( $c, $class ) {
-				return new $class(
-					$c->get( ViewRendererInterface::class ),
-					$c->get( AcfFieldServiceInterface::class ),
-					null,
-					null
-				);
-			}
-		);
 
 		// 6. Register services for controller and block providers.
 		for ( $index = $manifestProviderEndIndex; $index < $allProviderEndIndex; $index ++ ) {

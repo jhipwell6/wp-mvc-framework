@@ -34,13 +34,42 @@ final class Container
 			return ($this->bindings[$abstract])( $this );
 		}
 
-		foreach ( $this->resolvers as $base => $resolver ) {
-			if ( is_subclass_of( $abstract, $base ) ) {
-				return $resolver( $this, $abstract );
-			}
+		if ( class_exists( $abstract ) ) {
+			return $this->build( $abstract );
 		}
 
-		throw new \RuntimeException( "Cannot resolve [$abstract]. No binding registered." );
+		throw new \RuntimeException( "Cannot resolve [$abstract]." );
+	}
+
+	protected function build( string $class ): object
+	{
+		$reflection = new \ReflectionClass( $class );
+
+		if ( ! $reflection->isInstantiable() ) {
+			throw new \RuntimeException( "Class [$class] is not instantiable." );
+		}
+
+		$constructor = $reflection->getConstructor();
+
+		if ( ! $constructor ) {
+			return new $class();
+		}
+
+		$dependencies = [];
+
+		foreach ( $constructor->getParameters() as $parameter ) {
+			$type = $parameter->getType();
+
+			if ( ! $type || $type->isBuiltin() ) {
+				throw new \RuntimeException(
+						"Cannot resolve parameter \${$parameter->getName()} in [$class]"
+					);
+			}
+
+			$dependencies[] = $this->get( $type->getName() );
+		}
+
+		return $reflection->newInstanceArgs( $dependencies );
 	}
 
 	public function addProvider( ServiceProvider $provider ): void
