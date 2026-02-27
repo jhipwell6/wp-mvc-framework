@@ -50,77 +50,7 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 
 		$result = new ScaffoldResult();
 
-		$context = [
-			'app_namespace' => $appNamespace,
-			'post_type' => [
-				'slug' => $slug,
-				'class' => $class,
-				'label' => $label,
-				'supports_php' => $this->exportPhpArray( $supports ),
-				'archive_php' => $archive === true ? 'true' : ($archive === false ? 'false' : var_export( $archive, true )),
-				'rewrite_php' => $rewrite,
-				'fields' => '',
-				'field_hydration' => '',
-				'field_meta_persistence' => '',
-			],
-		];
-
-		$relationshipFields = [];
-
-		if ( ! empty( $options['with_acf'] ) ) {
-			$fields = $this->fieldProvider->fieldsForPostType( $slug );
-
-			if ( ! empty( $fields ) ) {
-				$propertyLines = [];
-				$hydrationLines = [];
-				$metaPersistenceLines = [];
-
-				foreach ( $fields as $field ) {
-					$type = $this->typeMapper->phpType( $field );
-					$metaKey = $field->name;
-
-					if ( $field->type === 'relationship' ) {
-						$relationshipFields[] = $field;
-						$hydrationLines[] = $this->generateRelationshipHydration( $field );
-						$metaPersistenceLines[] = $this->generateRelationshipMetaPersistence( $field );
-						continue;
-					}
-
-					if ( $field->type === 'repeater' ) {
-						$propertyLines[] = "public array \${$field->name} = [],";
-						$hydrationLines[] = $this->generateRepeaterHydration( $field );
-						$metaPersistenceLines[] = "        \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});";
-						continue;
-					}
-
-					$nullable = $field->required ? '' : '?';
-					$default = $field->required ? '' : ' = null';
-					$propertyLines[] = "public {$nullable}{$type} \${$field->name}{$default},";
-
-					if ( $type === '\\DateTimeImmutable' ) {
-						$hydrationLines[] = "{$metaKey}: (\$value = \$this->metaRepository->get(\$post->ID, '{$metaKey}')) ? new \\DateTimeImmutable(\$value) : null,";
-						$metaPersistenceLines[] = "        if (\$entity->{$metaKey} === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey}->format(DATE_ATOM));\n        }";
-						continue;
-					}
-
-					$hydrationLines[] = "{$metaKey}: \$this->metaRepository->get(\$post->ID, '{$metaKey}'),";
-					if ( $field->required ) {
-						$metaPersistenceLines[] = "        \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});";
-					} else {
-						$metaPersistenceLines[] = "        if (\$entity->{$metaKey} === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});\n        }";
-					}
-				}
-
-				$context['post_type']['fields'] = implode( "\n", $propertyLines );
-				$context['post_type']['field_hydration'] = implode( "\n", $hydrationLines );
-				$context['post_type']['field_meta_persistence'] = implode( "\n", $metaPersistenceLines );
-			}
-		}
-
-		$context['post_type'] = array_merge(
-			$context['post_type'],
-			$this->buildRelationshipContext( $relationshipFields, $appNamespace )
-		);
+		$context = $this->buildContext( $slug, $class, $label, $supports, $archive, $rewrite, ! empty( $options['with_acf'] ) );
 
 		$this->writer->writeTemplate(
 			$result,
@@ -175,6 +105,130 @@ final class MakePostTypeGenerator implements ScaffoldGeneratorInterface
 		$result->notes[] = "Next: load src/Content/PostTypes/{$slug}.php into the registration registry (client provider later).";
 
 		return $result;
+	}
+
+	public function refreshFromAcf( string $name, bool $force = true ): ScaffoldResult
+	{
+		$slug = strtolower( $name );
+		$class = Naming::studly( $slug );
+
+		$pluginRoot = rtrim( $this->project->pluginRoot(), '/' );
+		$domainRoot = $pluginRoot . '/' . $this->manifest->path( 'domain' );
+
+		$context = $this->buildContext(
+			$slug,
+			$class,
+			Naming::title( $slug ),
+			[ 'title', 'editor' ],
+			true,
+			$this->buildRewriteOption( $slug, null ),
+			true
+		);
+
+		$result = new ScaffoldResult();
+
+		$this->writer->writeTemplate(
+			$result,
+			"{$domainRoot}/PostTypes/{$class}/Generated/{$class}Base.php",
+			$this->stubs->get( 'post-type/entity.stub.php' ),
+			$context,
+			$force
+		);
+
+		$this->writer->writeTemplate(
+			$result,
+			"{$domainRoot}/PostTypes/{$class}/Generated/{$class}RepositoryBase.php",
+			$this->stubs->get( 'post-type/repository.stub.php' ),
+			$context,
+			$force
+		);
+
+		$result->notes[] = "Refreshed ACF-backed generated bases for '{$slug}'.";
+
+		return $result;
+	}
+
+	/**
+	 * @param array<int, string> $supports
+	 * @return array<string, mixed>
+	 */
+	private function buildContext( string $slug, string $class, string $label, array $supports, mixed $archive, string $rewrite, bool $withAcf ): array
+	{
+		$appNamespace = $this->manifest->namespace();
+
+		$context = [
+			'app_namespace' => $appNamespace,
+			'post_type' => [
+				'slug' => $slug,
+				'class' => $class,
+				'label' => $label,
+				'supports_php' => $this->exportPhpArray( $supports ),
+				'archive_php' => $archive === true ? 'true' : ($archive === false ? 'false' : var_export( $archive, true )),
+				'rewrite_php' => $rewrite,
+				'fields' => '',
+				'field_hydration' => '',
+				'field_meta_persistence' => '',
+			],
+		];
+
+		$relationshipFields = [];
+
+		if ( $withAcf ) {
+			$fields = $this->fieldProvider->fieldsForPostType( $slug );
+
+			if ( ! empty( $fields ) ) {
+				$propertyLines = [];
+				$hydrationLines = [];
+				$metaPersistenceLines = [];
+
+				foreach ( $fields as $field ) {
+					$type = $this->typeMapper->phpType( $field );
+					$metaKey = $field->name;
+
+					if ( $field->type === 'relationship' ) {
+						$relationshipFields[] = $field;
+						$hydrationLines[] = $this->generateRelationshipHydration( $field );
+						$metaPersistenceLines[] = $this->generateRelationshipMetaPersistence( $field );
+						continue;
+					}
+
+					if ( $field->type === 'repeater' ) {
+						$propertyLines[] = "public array \${$field->name} = [],";
+						$hydrationLines[] = $this->generateRepeaterHydration( $field );
+						$metaPersistenceLines[] = "        \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});";
+						continue;
+					}
+
+					$nullable = $field->required ? '' : '?';
+					$default = $field->required ? '' : ' = null';
+					$propertyLines[] = "public {$nullable}{$type} \${$field->name}{$default},";
+
+					if ( $type === '\\DateTimeImmutable' ) {
+						$hydrationLines[] = "{$metaKey}: (\$value = \$this->metaRepository->get(\$post->ID, '{$metaKey}')) ? new \\DateTimeImmutable(\$value) : null,";
+						$metaPersistenceLines[] = "        if (\$entity->{$metaKey} === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey}->format(DATE_ATOM));\n        }";
+						continue;
+					}
+
+					$hydrationLines[] = "{$metaKey}: \$this->metaRepository->get(\$post->ID, '{$metaKey}'),";
+					if ( $field->required ) {
+						$metaPersistenceLines[] = "        \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});";
+					} else {
+						$metaPersistenceLines[] = "        if (\$entity->{$metaKey} === null) {\n            \$this->metaRepository->delete(\$postId, '{$metaKey}');\n        } else {\n            \$this->metaRepository->update(\$postId, '{$metaKey}', \$entity->{$metaKey});\n        }";
+					}
+				}
+
+				$context['post_type']['fields'] = implode( "\n", $propertyLines );
+				$context['post_type']['field_hydration'] = implode( "\n", $hydrationLines );
+				$context['post_type']['field_meta_persistence'] = implode( "\n", $metaPersistenceLines );
+			}
+		}
+
+		$context['post_type'] = array_merge(
+			$context['post_type'],
+			$this->buildRelationshipContext( $relationshipFields, $appNamespace )
+		);
+
+		return $context;
 	}
 
 
