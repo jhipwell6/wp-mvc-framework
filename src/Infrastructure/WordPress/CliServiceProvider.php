@@ -8,6 +8,7 @@ use Snowberry\WpMvc\CLI\CommandRegistry;
 use Snowberry\WpMvc\CLI\MakePostTypeCommand;
 use Snowberry\WpMvc\CLI\MakeTaxonomyCommand;
 use Snowberry\WpMvc\CLI\MakeUserCommand;
+use Snowberry\WpMvc\CLI\RefreshPostTypeAcfCommand;
 use Snowberry\WpMvc\Contracts\FilesystemInterface;
 use Snowberry\WpMvc\Contracts\ProjectLocatorInterface;
 use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
@@ -45,7 +46,7 @@ final class CliServiceProvider extends ServiceProvider
 			);
 		});
 
-		$container->singleton(ScaffoldGeneratorInterface::class, function (Container $c): ScaffoldGeneratorInterface {
+		$container->singleton(MakePostTypeGenerator::class, function (Container $c): MakePostTypeGenerator {
 			return new MakePostTypeGenerator(
 				$c->get(ProjectLocatorInterface::class),
 				$c->get(ProjectManifestInterface::class),
@@ -55,6 +56,8 @@ final class CliServiceProvider extends ServiceProvider
 				$c->get(\Snowberry\WpMvc\Scaffolding\AcfTypeMapper::class),
 			);
 		});
+
+		$container->singleton(ScaffoldGeneratorInterface::class, fn (Container $c): ScaffoldGeneratorInterface => $c->get(MakePostTypeGenerator::class));
 
 		$container->singleton(MakeTaxonomyGenerator::class, function (Container $c): MakeTaxonomyGenerator {
 			return new MakeTaxonomyGenerator(
@@ -86,6 +89,7 @@ final class CliServiceProvider extends ServiceProvider
 		$registry = $container->get(CommandRegistry::class);
 
 		$registry->add(new MakePostTypeCommand($container->get(ScaffoldGeneratorInterface::class)));
+		$registry->add(new RefreshPostTypeAcfCommand($container->get(MakePostTypeGenerator::class)));
 		$registry->add(new MakeTaxonomyCommand($container));
 		$registry->add(new MakeUserCommand($container->get(MakeUserGenerator::class)));
 
