@@ -7,6 +7,9 @@ namespace Snowberry\WpMvc\Infrastructure\WordPress;
 use Snowberry\WpMvc\Core\Container;
 use Snowberry\WpMvc\Core\ServiceProvider;
 use Snowberry\WpMvc\Core\RegistrationRegistry;
+use Snowberry\WpMvc\Core\AssetRegistry;
+use Snowberry\WpMvc\Core\AssetManager;
+use Snowberry\WpMvc\Contracts\AssetManagerInterface;
 use Snowberry\WpMvc\Contracts\PostRepositoryInterface;
 use Snowberry\WpMvc\Contracts\UserMetaRepositoryInterface;
 use Snowberry\WpMvc\Contracts\UserRepositoryInterface;
@@ -26,8 +29,8 @@ use Snowberry\WpMvc\Contracts\ProjectManifestInterface;
 use Snowberry\WpMvc\Contracts\RegistrationRegistryInterface;
 use Snowberry\WpMvc\Contracts\PermissionCheckerInterface;
 use Snowberry\WpMvc\Contracts\PolicyRegistryInterface;
-use Snowberry\WpMvc\Core\PolicyRegistry;
 use Snowberry\WpMvc\Contracts\RoleManagerInterface;
+use Snowberry\WpMvc\Core\PolicyRegistry;
 
 final class WordPressServiceProvider extends ServiceProvider
 {
@@ -39,7 +42,7 @@ final class WordPressServiceProvider extends ServiceProvider
 		  | Core Infrastructure Adapters
 		  |--------------------------------------------------------------------------
 		 */
-		
+
 		$container->singleton(
 			PostRepositoryInterface::class,
 			fn() => new PostRepository()
@@ -55,7 +58,6 @@ final class WordPressServiceProvider extends ServiceProvider
 			fn() => new WordPressUserMetaRepository()
 		);
 
-		// Term Repository Adapter
 		$container->singleton(
 			TermRepositoryInterface::class,
 			fn() => new WordPressTermRepository()
@@ -116,6 +118,31 @@ final class WordPressServiceProvider extends ServiceProvider
 
 		/*
 		  |--------------------------------------------------------------------------
+		  | Asset Management
+		  |--------------------------------------------------------------------------
+		 */
+
+		$container->singleton(
+			AssetRegistry::class,
+			fn() => new AssetRegistry()
+		);
+
+		$container->singleton(
+			AssetManagerInterface::class,
+			fn( Container $c ) => new AssetManager(
+				$c->get( AssetRegistry::class )
+			)
+		);
+
+		$container->singleton(
+			WordPressAssetLoader::class,
+			fn( Container $c ) => new WordPressAssetLoader(
+				$c->get( AssetManagerInterface::class )
+			)
+		);
+
+		/*
+		  |--------------------------------------------------------------------------
 		  | Registration Adapters
 		  |--------------------------------------------------------------------------
 		 */
@@ -151,5 +178,12 @@ final class WordPressServiceProvider extends ServiceProvider
 				);
 			}
 		);
+	}
+
+	public function boot( Container $container ): void
+	{
+		$container
+			->get( WordPressAssetLoader::class )
+			->registerHooks();
 	}
 }
