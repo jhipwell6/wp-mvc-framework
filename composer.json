@@ -1,18 +1,21 @@
 {
-	"name": "snowberry/wp-mvc-framework",
-	"description": "Reusable WordPress MVC kernel and infrastructure adapters",
-	"type": "library",
-	"license": "proprietary",
-	"require": {
-		"php": ">=7.4"
-	},
-	"autoload": {
-		"psr-4": {
-			"Snowberry\\WpMvc\\": "src/"
-		}
-	},
-	"config": {
-		"sort-packages": true,
-		"optimize-autoloader": true
-	}
+    "name": "snowberry/wp-mvc-framework",
+    "description": "Reusable WordPress MVC kernel and infrastructure adapters",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Snowberry\\WpMvc\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
 }
