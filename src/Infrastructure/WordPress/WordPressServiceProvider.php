@@ -37,6 +37,8 @@ final class WordPressServiceProvider extends ServiceProvider
 
 	public function register( Container $container ): void
 	{
+		( new LoggingServiceProvider() )->register( $container );
+
 		/*
 		  |--------------------------------------------------------------------------
 		  | Core Infrastructure Adapters
