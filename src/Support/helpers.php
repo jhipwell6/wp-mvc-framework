@@ -67,6 +67,141 @@ if (! function_exists('data_get')) {
     }
 }
 
+if (! function_exists('data_set')) {
+    /**
+     * Set an item on an array or object using dot notation.
+     *
+     * @param mixed $target
+     * @param string|array|null $key
+     * @param mixed $value
+     * @param bool $overwrite
+     * @return mixed
+     */
+    function data_set(&$target, $key, $value, bool $overwrite = true)
+    {
+        $segments = is_array($key) ? $key : explode('.', (string) $key);
+
+        if (($segment = array_shift($segments)) === null) {
+            return $target;
+        }
+
+        if ($segments === []) {
+            if (is_array($target)) {
+                if ($overwrite || ! array_key_exists($segment, $target)) {
+                    $target[$segment] = value($value);
+                }
+
+                return $target;
+            }
+
+            if (is_object($target)) {
+                if ($overwrite || ! isset($target->{$segment})) {
+                    $target->{$segment} = value($value);
+                }
+            }
+
+            return $target;
+        }
+
+        if (is_array($target)) {
+            if (! array_key_exists($segment, $target) || (! is_array($target[$segment]) && ! is_object($target[$segment]))) {
+                $target[$segment] = [];
+            }
+
+            data_set($target[$segment], $segments, $value, $overwrite);
+            return $target;
+        }
+
+        if (is_object($target)) {
+            if (! isset($target->{$segment}) || (! is_array($target->{$segment}) && ! is_object($target->{$segment}))) {
+                $target->{$segment} = [];
+            }
+
+            data_set($target->{$segment}, $segments, $value, $overwrite);
+        }
+
+        return $target;
+    }
+}
+
+if (! function_exists('data_has')) {
+    /**
+     * Check if an item exists in an array or object using dot notation.
+     *
+     * @param mixed $target
+     * @param string|array|null $key
+     * @return bool
+     */
+    function data_has($target, $key): bool
+    {
+        $keys = is_array($key) ? $key : [$key];
+
+        if ($keys === []) {
+            return false;
+        }
+
+        foreach ($keys as $item) {
+            $subTarget = $target;
+
+            if ($item === null) {
+                return false;
+            }
+
+            foreach (explode('.', (string) $item) as $segment) {
+                if (is_array($subTarget) && array_key_exists($segment, $subTarget)) {
+                    $subTarget = $subTarget[$segment];
+                    continue;
+                }
+
+                if ($subTarget instanceof ArrayAccess && $subTarget->offsetExists($segment)) {
+                    $subTarget = $subTarget[$segment];
+                    continue;
+                }
+
+                if (is_object($subTarget) && (isset($subTarget->{$segment}) || property_exists($subTarget, $segment))) {
+                    $subTarget = $subTarget->{$segment};
+                    continue;
+                }
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+if (! function_exists('data_forget')) {
+    /**
+     * Remove one or many items from an array using dot notation.
+     *
+     * @param array $target
+     * @param string|array $keys
+     * @return void
+     */
+    function data_forget(array &$target, $keys): void
+    {
+        $keys = (array) $keys;
+
+        foreach ($keys as $key) {
+            $segments = explode('.', (string) $key);
+            $subTarget =& $target;
+
+            while (count($segments) > 1) {
+                $segment = array_shift($segments);
+
+                if (! isset($subTarget[$segment]) || ! is_array($subTarget[$segment])) {
+                    continue 2;
+                }
+
+                $subTarget =& $subTarget[$segment];
+            }
+
+            unset($subTarget[array_shift($segments)]);
+        }
+    }
+}
+
 if (! function_exists('array_first')) {
     /**
      * Return the first element in an array passing a given truth test.
@@ -93,6 +228,29 @@ if (! function_exists('array_first')) {
         }
 
         return value($default);
+    }
+}
+
+if (! function_exists('array_last')) {
+    /**
+     * Return the last element in an array passing a given truth test.
+     *
+     * @param array $array
+     * @param callable|null $callback
+     * @param mixed $default
+     * @return mixed
+     */
+    function array_last(array $array, callable $callback = null, $default = null)
+    {
+        if ($callback === null) {
+            if ($array === []) {
+                return value($default);
+            }
+
+            return end($array);
+        }
+
+        return array_first(array_reverse($array, true), $callback, $default);
     }
 }
 
@@ -145,6 +303,73 @@ if (! function_exists('array_has')) {
         }
 
         return true;
+    }
+}
+
+if (! function_exists('array_where')) {
+    /**
+     * Filter the array using the given callback.
+     *
+     * @param array $array
+     * @param callable $callback
+     * @return array
+     */
+    function array_where(array $array, callable $callback): array
+    {
+        return array_filter($array, $callback, ARRAY_FILTER_USE_BOTH);
+    }
+}
+
+if (! function_exists('array_map_with_keys')) {
+    /**
+     * Run a map over each of the items and flatten into a single array.
+     *
+     * @param array $array
+     * @param callable $callback
+     * @return array
+     */
+    function array_map_with_keys(array $array, callable $callback): array
+    {
+        $result = [];
+
+        foreach ($array as $key => $value) {
+            $assoc = $callback($value, $key);
+
+            foreach ($assoc as $mapKey => $mapValue) {
+                $result[$mapKey] = $mapValue;
+            }
+        }
+
+        return $result;
+    }
+}
+
+if (! function_exists('array_pluck')) {
+    /**
+     * Pluck an array of values from an array.
+     *
+     * @param array $array
+     * @param string|array $value
+     * @param string|array|null $key
+     * @return array
+     */
+    function array_pluck(array $array, $value, $key = null): array
+    {
+        $results = [];
+
+        foreach ($array as $item) {
+            $itemValue = data_get($item, $value);
+
+            if ($key === null) {
+                $results[] = $itemValue;
+                continue;
+            }
+
+            $itemKey = data_get($item, $key);
+            $results[$itemKey] = $itemValue;
+        }
+
+        return $results;
     }
 }
 
